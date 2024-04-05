@@ -28,9 +28,9 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # add runtime dependencies
-  spec.add_runtime_dependency 'active_attr'
   spec.add_runtime_dependency 'faraday'
   spec.add_runtime_dependency 'money'
+  spec.add_runtime_dependency 'rails-i18n'
 
   # add development dependencies
   spec.add_development_dependency 'rake'

@@ -1,4 +1,6 @@
 require "money"
+require 'pry'
+
 
 module InvestecOpenApi::Models
   TransactionStruct = Struct.new(
@@ -24,7 +26,8 @@ module InvestecOpenApi::Models
     end
 
     def self.from_api(params)
-      params = params.transform_keys(&:underscore).symbolize_keys
+      original_params = params.dup
+      params = underscore_and_symbolize_keys(params)
 
       if params[:amount]
         adjusted_amount = params[:amount] * 100
@@ -42,10 +45,29 @@ module InvestecOpenApi::Models
         Money.locale_backend = :i18n
         params[:running_balance] = Money.from_cents(adjusted_amount, "ZAR")
       end
-
-      params[:date] = Date.parse(params[:transaction_date]) if params[:transaction_date]
+  
+      if params[:transaction_date]
+        params[:date] = Date.parse(params.delete(:transaction_date))
+      end
 
       new(params)
     end
+
+    def self.underscore_and_symbolize_keys(hash)
+      hash.each_with_object({}) do |(key, value), result|
+        underscored_key = underscore(key.to_s)
+        symbolized_key = underscored_key.to_sym
+        result[symbolized_key] = value
+      end
+    end
+
+    def self.underscore(camel_cased_word)
+      camel_cased_word.gsub(/::/, '/')
+      .gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2')
+      .gsub(/([a-z\d])([A-Z])/,'\1_\2')
+      .tr("-", "_")
+      .downcase
+    end
+
   end
 end
