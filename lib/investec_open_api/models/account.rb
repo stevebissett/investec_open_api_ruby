@@ -1,28 +1,18 @@
 module InvestecOpenApi::Models
-  class Account < Base
-    attribute :id
-    attribute :number
-    attribute :name
-    attribute :reference_name
-    attribute :product_name
-    attribute :kyc_compliant
-    attribute :profile_id
-    attribute :profile_name
-
+  Account = Struct.new(*Base.members, keyword_init: true) do
     def self.from_api(params = {})
-      if params['accountId'].present?
-        params['id'] = params['accountId']
-      end
+      # Map API parameters to Struct attributes
+      mapped_params = {
+        id: params['accountId'],
+        number: params['accountNumber'],
+        name: params['accountName'],
+        # Add other attributes as needed
+      }
 
-      if params['accountNumber'].present?
-        params['number'] = params['accountNumber']
-      end
+      # Remove nil entries
+      mapped_params.compact!
 
-      if params['accountName'].present?
-        params['name'] = params['accountName']
-      end
-
-      super
+      super(mapped_params)
     end
   end
 end
