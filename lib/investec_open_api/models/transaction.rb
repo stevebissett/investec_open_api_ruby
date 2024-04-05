@@ -1,71 +1,52 @@
+require "dry-struct"
+require "dry-types"
 require "money"
-require 'pry'
+require "date"
+require "digest"
+require_relative 'base' 
 
+module Types
+  include Dry.Types()
+
+  String = Types::Strict::String
+  MoneyType = Types.Constructor(Money) do |value, _currency = "ZAR"|
+    amount = value.is_a?(Numeric) ? BigDecimal(value.to_s) * 100 : 0
+    Money.from_cents(amount, "ZAR")
+  end
+end
 
 module InvestecOpenApi::Models
-  TransactionStruct = Struct.new(
-    :account_id,
-    :posted_order,
-    :type,
-    :transaction_type,
-    :status,
-    :card_number,
-    :amount,
-    :description,
-    :running_balance,
-    :date,
-    :posting_date,
-    :value_date,
-    :action_date,
-    keyword_init: true
-  )
+  class Transaction < Dry::Struct
+    extend Base
+    transform_keys do |key|
+      key_mapping(key.to_s)
+    end
 
-  class Transaction < TransactionStruct
+    attribute :account_id, Types::String
+    attribute :posted_order, Types::Integer
+    attribute :type, Types::String
+    attribute :transaction_type, Types::String
+    attribute :status, Types::String.optional
+    attribute :card_number, Types::String.optional
+    attribute :amount, Types::MoneyType
+    attribute :description, Types::String
+    attribute :running_balance, Types::MoneyType
+    attribute :date, Types::Params::Date
+    attribute :posting_date, Types::Params::Date
+    attribute :value_date, Types::Params::Date
+    attribute :action_date, Types::Params::Date
+
     def id
-      [amount.to_i, description, date.to_s].map(&:to_s).join('-')
+      data_string = [amount.to_i.abs, description, date.to_s].to_s
+      Digest::SHA1.hexdigest(data_string)
     end
 
-    def self.from_api(params)
-      Money.rounding_mode = BigDecimal::ROUND_HALF_UP
-      Money.locale_backend = :i18n
-      params = underscore_and_symbolize_keys(params)
-
-      if params[:amount]
-        adjusted_amount = params[:amount] * 100
-        adjusted_amount = -adjusted_amount if params[:type] == 'DEBIT'
-        params[:amount] = Money.from_cents(adjusted_amount, "ZAR")
-      end
-
-      if params[:running_balance]
-        adjusted_amount = params[:running_balance] * 100
-        params[:running_balance] = Money.from_cents(adjusted_amount, "ZAR")
-      end
-  
-      if params[:transaction_date]
-        params[:date] = Date.parse(params.delete(:transaction_date))
-      end
-
-      params[:action_date] = Date.parse(params[:action_date]) if params[:action_date]
-      params[:posting_date] = Date.parse(params[:posting_date]) if params[:posting_date]
-      params[:value_date] = Date.parse(params[:value_date]) if params[:value_date]
-
-      new(params)
+    def amount_signed
+      amount.abs * (type == "DEBIT" ? -1 : 1)
     end
 
-    def self.underscore_and_symbolize_keys(hash)
-      hash.each_with_object({}) do |(key, value), result|
-        underscored_key = underscore(key.to_s)
-        symbolized_key = underscored_key.to_sym
-        result[symbolized_key] = value
-      end
-    end
-
-    def self.underscore(camel_cased_word)
-      camel_cased_word.gsub(/::/, '/')
-      .gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2')
-      .gsub(/([a-z\d])([A-Z])/,'\1_\2')
-      .tr("-", "_")
-      .downcase
+    def self.key_map
+      { "transactionDate" => :date }
     end
 
   end

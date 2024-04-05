@@ -30,7 +30,8 @@ Gem::Specification.new do |spec|
   # add runtime dependencies
   spec.add_runtime_dependency 'faraday'
   spec.add_runtime_dependency 'money'
-  spec.add_runtime_dependency 'rails-i18n'
+  spec.add_runtime_dependency 'dry-struct'
+  spec.add_runtime_dependency 'dry-types'
 
   # add development dependencies
   spec.add_development_dependency 'rake'
