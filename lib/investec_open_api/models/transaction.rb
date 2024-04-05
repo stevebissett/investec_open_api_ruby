@@ -26,23 +26,18 @@ module InvestecOpenApi::Models
     end
 
     def self.from_api(params)
-      original_params = params.dup
+      Money.rounding_mode = BigDecimal::ROUND_HALF_UP
+      Money.locale_backend = :i18n
       params = underscore_and_symbolize_keys(params)
 
       if params[:amount]
         adjusted_amount = params[:amount] * 100
         adjusted_amount = -adjusted_amount if params[:type] == 'DEBIT'
-
-        Money.rounding_mode = BigDecimal::ROUND_HALF_UP
-        #Money.locale_backend = :i18n
         params[:amount] = Money.from_cents(adjusted_amount, "ZAR")
       end
 
       if params[:running_balance]
         adjusted_amount = params[:running_balance] * 100
-
-        Money.rounding_mode = BigDecimal::ROUND_HALF_UP
-        #Money.locale_backend = :i18n
         params[:running_balance] = Money.from_cents(adjusted_amount, "ZAR")
       end
   
