@@ -34,7 +34,7 @@ module InvestecOpenApi::Models
         adjusted_amount = -adjusted_amount if params[:type] == 'DEBIT'
 
         Money.rounding_mode = BigDecimal::ROUND_HALF_UP
-        Money.locale_backend = :i18n
+        #Money.locale_backend = :i18n
         params[:amount] = Money.from_cents(adjusted_amount, "ZAR")
       end
 
@@ -42,13 +42,17 @@ module InvestecOpenApi::Models
         adjusted_amount = params[:running_balance] * 100
 
         Money.rounding_mode = BigDecimal::ROUND_HALF_UP
-        Money.locale_backend = :i18n
+        #Money.locale_backend = :i18n
         params[:running_balance] = Money.from_cents(adjusted_amount, "ZAR")
       end
   
       if params[:transaction_date]
         params[:date] = Date.parse(params.delete(:transaction_date))
       end
+
+      params[:action_date] = Date.parse(params[:action_date]) if params[:action_date]
+      params[:posting_date] = Date.parse(params[:posting_date]) if params[:posting_date]
+      params[:value_date] = Date.parse(params[:value_date]) if params[:value_date]
 
       new(params)
     end

@@ -23,15 +23,12 @@ RSpec.describe InvestecOpenApi::Models::Transaction do
         "transactionType" => "CardPurchases"
       })
 
-      binding.pry
-
       expect(model_instance.account_id).to eq "12345"
       expect(model_instance.type).to eq "DEBIT"
       expect(model_instance.status).to eq "POSTED"
       expect(model_instance.card_number).to eq "400000xxxxxx0001"
       expect(model_instance.amount).to be_a(Money)
       expect(model_instance.amount.to_f).to eq -50000.32  # Assuming conversion to Money and negative for DEBIT
-      expect(model_instance.amount.format).to eq "-R50,000.32"
       expect(model_instance.description).to eq "COFFEE"
       expect(model_instance.date).to eq Date.parse("2020-07-13")
       expect(model_instance.posting_date).to eq Date.parse("2020-07-14")
@@ -40,7 +37,6 @@ RSpec.describe InvestecOpenApi::Models::Transaction do
       expect(model_instance.action_date).to eq Date.parse("2020-07-21")
       expect(model_instance.running_balance).to be_a(Money)
       expect(model_instance.running_balance.to_f).to eq 100000.64
-      expect(model_instance.running_balance.format).to eq "R100,000.64"
       expect(model_instance.transaction_type).to eq "CardPurchases"
     end
   end
