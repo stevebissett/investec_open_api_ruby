@@ -3,7 +3,7 @@ require "dry-types"
 require "money"
 require "date"
 require "digest"
-require_relative 'base' 
+require_relative "base"
 
 module Types
   include Dry.Types()
@@ -25,7 +25,7 @@ module InvestecOpenApi::Models
     attribute :account_id, Types::String
     attribute :posted_order, Types::Integer
     attribute :type, Types::String
-    attribute :transaction_type, Types::String
+    attribute :transaction_type, Types::String.optional
     attribute :status, Types::String.optional
     attribute :card_number, Types::String.optional
     attribute :amount, Types::MoneyType
@@ -46,8 +46,9 @@ module InvestecOpenApi::Models
     end
 
     def self.key_map
-      { "transactionDate" => :date }
+      {
+        "transactionDate" => :date
+      }
     end
-
   end
 end

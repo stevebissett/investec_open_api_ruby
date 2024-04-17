@@ -1,5 +1,5 @@
 require "rspec"
-require "bundler/setup"
+require "bundler/setup" 
 require "investec_open_api"
 require "webmock/rspec"
 

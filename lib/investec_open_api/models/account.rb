@@ -1,7 +1,7 @@
-require 'dry-struct'
-require 'dry-types'
+require "dry-struct"
+require "dry-types"
 require "investec_open_api/string_utilities"
-require_relative 'base' 
+require_relative "base"
 
 module Types
   include Dry.Types()
@@ -24,13 +24,21 @@ module InvestecOpenApi::Models
     attribute :profile_id, Types::String
     attribute :profile_name, Types::String
 
-    def self.key_map
-      {
-        'accountId' => :id,
-        'accountNumber' => :number,
-        'accountName' => :name
-      }
+    def masked_number(shorten: true)
+      masked_number = number.to_s.gsub(/\d(?=\d{4})/, "x")
+      if shorten
+        masked_number[-4..]
+      else
+        masked_number
+      end
     end
 
+    def self.key_map
+      {
+        "accountId" => :id,
+        "accountNumber" => :number,
+        "accountName" => :name,
+      }
+    end
   end
 end
