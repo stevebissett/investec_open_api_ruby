@@ -2,6 +2,10 @@ require "spec_helper"
 require "investec_open_api/client"
 require "investec_open_api/models/account"
 require "investec_open_api/models/transaction"
+require "investec_open_api/models/card"
+require "investec_open_api/models/code/execution"
+require "investec_open_api/models/code/execution_log"
+#require "investec_open_api/models/reference/country"
 
 RSpec.describe InvestecOpenApi::Client do
   let(:client) { InvestecOpenApi::Client.new }
@@ -20,7 +24,7 @@ RSpec.describe InvestecOpenApi::Client do
           "Accept-Encoding" => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3",
           "Authorization" => "Basic VGVzdDpTZWNyZXQ=",
           "Content-Type" => "application/x-www-form-urlencoded",
-          "User-Agent" => "Faraday v2.7.11",
+          "User-Agent" => "Faraday v2.9.0",
           "X-Api-Key" => "TESTKEY",
         },
       )
@@ -41,7 +45,7 @@ RSpec.describe InvestecOpenApi::Client do
             "Accept" => "application/json",
             "Accept-Encoding" => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3",
             "Authorization" => "Bearer 123",
-            "User-Agent" => "Faraday v2.7.11",
+            "User-Agent" => "Faraday v2.9.0",
           },
         )
         .to_return(
@@ -141,7 +145,7 @@ RSpec.describe InvestecOpenApi::Client do
         "Accept" => "application/json",
         "Accept-Encoding" => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3",
         "Authorization" => "Bearer 123",
-        "User-Agent" => "Faraday v2.7.11",
+        "User-Agent" => "Faraday v2.9.0",
       }
     end
 
@@ -188,25 +192,126 @@ RSpec.describe InvestecOpenApi::Client do
     end
   end
 
-  describe "#documents" do
-    let(:document_data) do
-      {
-        data: {}
-      }
-    end
-
-    let(:headers) do
-      {
-        "Accept" => "application/json",
-        "Accept-Encoding" => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3",
-        "Authorization" => "Bearer 123",
-        "User-Agent" => "Faraday v2.7.11",
-      }
-    end
-
+  describe "#cards" do
     before do
+      stub_request(:get, "#{api_url}za/v1/cards")
+        .with(
+          headers: {
+            "Accept" => "application/json",
+            "Accept-Encoding" => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3",
+            "Authorization" => "Bearer 123",
+            "User-Agent" => "Faraday v2.9.0",
+          },
+        )
+        .to_return(
+          body: {
+            data: {
+              cards: [
+                {
+                  "CardKey": "1234",
+                  "CardNumber": "401234XXXXXX2020",
+                  "IsProgrammable": true,
+                  "Status": "Active",
+                  "CardTypeCode": "VGC",
+                  "AccountNumber": "12394234",
+                  "AccountId": "238008073828482846",
+                  "EmbossedName": "MR J KRUGER",
+                  "IsVirtualCard": false,
+                },
+                {
+                  "CardKey": "1235",
+                  "CardNumber": "401234XXXXXX2030",
+                  "IsProgrammable": true,
+                  "Status": "Active",
+                  "CardTypeCode": "VVG",
+                  "AccountNumber": "12394234",
+                  "AccountId": "238008073828482846",
+                  "EmbossedName": "ONLINE SHOPPING CARD",
+                  "IsVirtualCard": true,
+                },
+              ],
+            },
+          }.to_json,
+          headers: {
+            "Content-Type" => "application/json",
+          },
+        )
+
       client.authenticate!
     end
 
+    it "returns all accounts for the authorized user as InvestecOpenApi::Models::Card instances" do
+      cards = client.cards
+
+      expect(cards.first).to be_an_instance_of(InvestecOpenApi::Models::Card)
+      expect(cards.first.key).to eq "1234"
+      expect(cards.first.number).to eq "401234XXXXXX2020"
+      expect(cards.first.is_programmable).to eq true
+      expect(cards.first.status).to eq "Active"
+      expect(cards.first.type_code).to eq "VGC"
+      expect(cards.first.account_number).to eq "12394234"
+      expect(cards.first.account_id).to eq "238008073828482846"
+      expect(cards.first.embossed_name).to eq "MR J KRUGER"
+      expect(cards.first.is_virtual).to eq false
+    end
+  end
+
+  describe "#code_executions" do
+    before do
+      stub_request(:get, "#{api_url}za/v1/cards/1234/code/executions")
+        .with(
+          headers: {
+            "Accept" => "application/json",
+            "Accept-Encoding" => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3",
+            "Authorization" => "Bearer 123",
+            "User-Agent" => "Faraday v2.9.0",
+          },
+        )
+        .to_return(
+          body: {
+            data: {
+              result: {
+                executionItems: [
+                  {
+                    "executionId": "AABBCCDD-1234-1234-1234-12345ABCDEF",
+                    "rootCodeFunctionId": "AABBCCDD-1234-1234-1234-54321ABCDEF",
+                    "sandbox": false,
+                    "type": "before_transaction",
+                    "authorizationApproved": nil,
+                    "logs": [
+                      {
+                        "createdAt": "2024-04-14T13:18:38.501Z",
+                        "level": "info",
+                        "content": "log content",
+                      },
+                    ],
+                    "smsCount": 0,
+                    "emailCount": 0,
+                    "pushNotificationCount": 0,
+                    "createdAt": "2024-04-14T13:18:38.201Z",
+                    "startedAt": "2024-04-14T13:18:38.201Z",
+                    "completedAt": "2024-04-14T13:18:38.801Z",
+                    "updatedAt": "2024-04-14T13:18:38.201Z",
+                  },
+                ],
+              },
+            },
+          }.to_json,
+          headers: {
+            "Content-Type" => "application/json",
+          },
+        )
+
+      client.authenticate!
+    end
+
+    it "returns all code executions for the specified card key as InvestecOpenApi::Models::Code::Execution instances" do
+      code_executions = client.code_executions("1234")
+
+      expect(code_executions.first).to be_an_instance_of(InvestecOpenApi::Models::Code::Execution)
+      expect(code_executions.first.logs.first).to be_an_instance_of(InvestecOpenApi::Models::Code::ExecutionLog)
+      expect(code_executions.first.id).to eq "AABBCCDD-1234-1234-1234-12345ABCDEF"
+      expect(code_executions.first.root_code_function_id).to eq "AABBCCDD-1234-1234-1234-54321ABCDEF"
+    end
   end
 end

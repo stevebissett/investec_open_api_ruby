@@ -3,6 +3,7 @@ require "investec_open_api/models/account"
 require "investec_open_api/models/transaction"
 require "investec_open_api/models/document"
 require "investec_open_api/camel_case_refinement"
+require 'base64'
 require "pry"
 
 class InvestecOpenApi::Client
@@ -73,10 +74,24 @@ class InvestecOpenApi::Client
     end
   end
 
+  def cards
+    response = connection.get("za/v1/cards")
+    response.body["data"]["cards"].map do |card_raw|
+      InvestecOpenApi::Models::Card.from_api(card_raw)
+    end
+  end
+
+  def code_executions(card_key)
+    response = connection.get("za/v1/cards/#{card_key}/code/executions")
+    response.body["data"]["result"]["executionItems"].map do |execution_raw|
+      InvestecOpenApi::Models::Code::Execution.from_api(execution_raw)
+    end
+  end
+
   private
 
   def get_oauth_token
-    auth_token = Base64.strict_encode64("#{InvestecOpenApi.client_id}:#{InvestecOpenApi.client_secret}")
+    auth_token = ::Base64.strict_encode64("#{InvestecOpenApi.client_id}:#{InvestecOpenApi.client_secret}")
 
     response = Faraday.post(
       "#{INVESTEC_API_URL}identity/v2/oauth2/token",
