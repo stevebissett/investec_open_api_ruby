@@ -11,6 +11,7 @@ module Types
   String = Types::Strict::String
   MoneyType = Types.Constructor(Money) do |value, _currency = "ZAR"|
     amount = value.is_a?(Numeric) ? BigDecimal(value.to_s) * 100 : 0
+    Money.locale_backend = nil
     Money.from_cents(amount, "ZAR")
   end
 end

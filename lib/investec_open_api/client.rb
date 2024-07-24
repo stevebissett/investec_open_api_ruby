@@ -2,9 +2,11 @@ require "faraday"
 require "investec_open_api/models/account"
 require "investec_open_api/models/transaction"
 require "investec_open_api/models/document"
+require "investec_open_api/models/card"
+require "investec_open_api/models/code/execution"
 require "investec_open_api/camel_case_refinement"
+require "investec_open_api/logging_middleware"
 require 'base64'
-require "pry"
 
 class InvestecOpenApi::Client
   using InvestecOpenApi::CamelCaseRefinement
@@ -90,6 +92,10 @@ class InvestecOpenApi::Client
 
   private
 
+  def get(logged: true)
+    connection.get(url)
+  end
+
   def get_oauth_token
     auth_token = ::Base64.strict_encode64("#{InvestecOpenApi.client_id}:#{InvestecOpenApi.client_secret}")
 
@@ -113,6 +119,10 @@ class InvestecOpenApi::Client
 
       builder.headers["Accept"] = "application/json"
       builder.request :json
+
+      # Setup logging middleware with a custom directory (optional)
+      # custom_log_dir = '/path/to/your/custom/directory'  # Customize this path or remove it to use default
+      builder.use InvestecOpenApi::LoggingMiddleware
 
       builder.response :raise_error
       builder.response :json
