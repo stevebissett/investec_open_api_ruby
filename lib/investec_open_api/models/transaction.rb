@@ -1,54 +1,55 @@
+require "dry-struct"
+require "dry-types"
 require "money"
+require "date"
+require "digest"
+require_relative "base"
+
+module Types
+  include Dry.Types()
+
+  String = Types::Strict::String
+  MoneyType = Types.Constructor(Money) do |value, _currency = "ZAR"|
+    amount = value.is_a?(Numeric) ? BigDecimal(value.to_s) * 100 : 0
+    Money.locale_backend = nil
+    Money.from_cents(amount, "ZAR")
+  end
+end
 
 module InvestecOpenApi::Models
-  class Transaction < Base
-    attribute :account_id
-    attribute :posted_order
-    attribute :type
-    attribute :transaction_type
-    attribute :status
-    attribute :card_number
-    attribute :amount
-    attribute :description
-    attribute :running_balance
-    attribute :date, type: Date
-    attribute :posting_date, type: Date
-    attribute :value_date, type: Date
-    attribute :action_date, type: Date
-
-    # At this point, there is no unique identifier being returned from Investec's API.
-    # This method serves to create a stable unique identifier based on the transaction details.
-    def id
-      [
-        amount.to_i,
-        description,
-        date.to_s
-      ].map(&:to_s).join('-')
+  class Transaction < Dry::Struct
+    extend Base
+    transform_keys do |key|
+      key_mapping(key.to_s)
     end
 
-    def self.from_api(params)
-      if params['amount'].present?
-        adjusted_amount = params['amount'] * 100
-        adjusted_amount = -adjusted_amount if params['type'] == 'DEBIT'
+    attribute :account_id, Types::String
+    attribute :posted_order, Types::Integer
+    attribute :type, Types::String
+    attribute :transaction_type, Types::String.optional
+    attribute :status, Types::String.optional
+    attribute :card_number, Types::String.optional
+    attribute :amount, Types::MoneyType
+    attribute :description, Types::String
+    attribute :running_balance, Types::MoneyType
+    attribute :date, Types::Params::Date
+    attribute :posting_date, Types::Params::Date
+    attribute :value_date, Types::Params::Date
+    attribute :action_date, Types::Params::Date
 
-        Money.rounding_mode = BigDecimal::ROUND_HALF_UP
-        Money.locale_backend = :i18n
-        params['amount'] = Money.from_cents(adjusted_amount, "ZAR")
-      end
+    def id
+      data_string = [amount.to_i.abs, description, date.to_s].to_s
+      Digest::SHA1.hexdigest(data_string)
+    end
 
-      if params['runningBalance'].present?
-        adjusted_amount = params['runningBalance'] * 100
+    def amount_signed
+      amount.abs * (type == "DEBIT" ? -1 : 1)
+    end
 
-        Money.rounding_mode = BigDecimal::ROUND_HALF_UP
-        Money.locale_backend = :i18n
-        params['runningBalance'] = Money.from_cents(adjusted_amount, "ZAR")
-      end
-
-      if params['transactionDate']
-        params['date'] = params['transactionDate']
-      end
-
-      super
+    def self.key_map
+      {
+        "transactionDate" => :date
+      }
     end
   end
 end

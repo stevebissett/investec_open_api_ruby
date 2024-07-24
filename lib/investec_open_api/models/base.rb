@@ -1,15 +1,12 @@
-require "active_attr"
-
 module InvestecOpenApi::Models
-  class Base
-    include ActiveAttr::Model
-
-    def self.from_api(params = {})
-      underscored_params = params.deep_transform_keys do |key|
-        key.underscore.to_sym
+    using InvestecOpenApi::StringUtilities
+    module Base
+      def from_api(params)
+        new(params)
       end
-
-      new(underscored_params)
+  
+      def key_mapping(key)
+        key_map[key] || key.underscore.to_sym
+      end
     end
   end
-end
